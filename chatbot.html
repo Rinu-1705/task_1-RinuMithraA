@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBot - Interactive Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #A9DFBF 0%, #7AC89B 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            max-height: 700px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #A9DFBF 0%, #7AC89B 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.user .message-content {
+            background: #A9DFBF;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .message-content {
+            background: #eafaf2;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.bot .message-content strong {
+            color: #A9DFBF;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            background: white;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #A9DFBF;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #A9DFBF;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #6bbd9d;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(169, 223, 191, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .help-hint {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-box::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bonnie</h1>
+            <p>Your friendly rule-based chatbot assistant</p>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="message bot">
+                <div class="message-content">
+                    <strong>Bonnie:</strong> Hello! I'm here to help. Type 'help' to see what I can do!
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Type your message here..."
+                autocomplete="off"
+            >
+            <button id="sendBtn">Send</button>
+        </div>
+
+        <div class="help-hint">
+            Try: hello, help, how are you, your name, tell me a joke, thanks, say something interesting
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function chatbotResponse(input) {
+            input = input.toLowerCase().trim();
+
+            // Greetings
+            if (["hi", "hello", "hai","Hai","hey", "greetings", "good morning", "good afternoon", "good evening", "sup", "yo", "what's up"].includes(input)) {
+                const greetings = [
+                    "Hello! How can I help you today?",
+                    "Hi there! Great to see you!",
+                    "Hey! What brings you here?",
+                    "Greetings! How's it going?"
+                ];
+                return greetings[Math.floor(Math.random() * greetings.length)];
+            }
+
+            // Exit commands
+            else if (["bye", "goodbye", "exit", "quit", "see you", "take care", "cya", "farewell"].includes(input)) {
+                const farewells = [
+                    "Goodbye! Have a great day!",
+                    "See you later! Come back soon!",
+                    "Catch you later! ",
+                    "Take care and have an awesome day!"
+                ];
+                return farewells[Math.floor(Math.random() * farewells.length)];
+            }
+
+            // How are you?
+            else if (["how are you","how are you doing", "how's it going", "how you doing", "what's up with you"].includes(input)) {
+                const responses = [
+                    "I'm just a simple bot, but I'm functioning well! Thanks for asking.",
+                    "I'm doing great! Ready to help you out!",
+                    "All systems running smoothly! How about you?"
+                ];
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+
+            // What's your name?
+            else if (["what is your name", "your name", "who are you", "whats u r name", "what are you called", "what should i call you"].includes(input)) {
+                return "I'm a rule-based chatbot. You can call me Bonnie!";
+            }
+
+            // Help
+            else if (["help", "what can you do", "what are your capabilities", "tell me what you can do", "capabilities"].includes(input)) {
+                return "I can greet you, tell you my name, discuss the time, answer trivia, tell jokes, and have friendly conversations! Just try asking me things!";
+            }
+
+            // Thank you
+            else if (["thanks", "thank you", "thank you so much", "appreciate it", "thanks a lot", "much appreciated"].includes(input)) {
+                return "You're welcome! I'm always happy to help! ";
+            }
+
+            // Compliments
+            else if (["you're great", "you're awesome", "you're cool", "you're smart", "nice bot", "i like you"].includes(input)) {
+                return "Aw, thanks so much! You're pretty awesome yourself! ";
+            }
+
+            // Time/Date questions
+            else if (["what time is it", "what's the time", "tell me the time", "current time"].includes(input)) {
+                const now = new Date();
+                return "I can't check the real time, but it's currently " + now.toLocaleTimeString() + " on your device!";
+            }
+
+            // Jokes
+            else if (["tell me a joke", "make me laugh", "say something funny", "joke", "humor me"].includes(input)) {
+                const jokes = [
+                    "Why did the chatbot go to school? Because it wanted to improve its responses! ",
+                    "Why do programmers prefer dark mode? Because light attracts bugs! ",
+                    "How many programmers does it take to change a light bulb? None, that's a hardware problem!",
+                    "Why did the AI go to therapy? It had too many issues to process! "
+                ];
+                return jokes[Math.floor(Math.random() * jokes.length)];
+            }
+
+            // Math/Trivia
+            else if (["who are you", "what is pi", "what is 2+2"].includes(input)) {
+                if (input === "what is pi") return "Pi (π) is approximately 3.14159! It's the ratio of a circle's circumference to its diameter.";
+                if (input === "what is 2+2") return "2+2 equals 4! Math is fun!";
+                if (input === "who are you") return "I'm Bonnie, your friendly AI chatbot assistant!";
+            }
+
+            // Feeling check-ins
+            else if (["i'm happy", "i'm sad", "i'm bored", "i'm excited", "i'm tired"].includes(input)) {
+                return "That's interesting! Is there anything I can help you with to make your day better?";
+            }
+
+            // Common questions
+            else if (["what's new", "tell me something", "say something interesting"].includes(input)) {
+                const facts = [
+                    "Did you know? Honey never spoils! Archaeologists have found 3,000-year-old honey in Egyptian tombs that was still edible.",
+                    "Did you know? A group of flamingos is called a 'flamboyance'!",
+                    "Did you know? Octopuses have three hearts and blue blood!",
+                    "Did you know? Bananas are berries, but strawberries aren't!"
+                ];
+                return facts[Math.floor(Math.random() * facts.length)];
+            }
+
+            // Yes/No questions
+            else if (["yes", "no", "maybe", "i don't know"].includes(input)) {
+                return "Interesting! Tell me more about what's on your mind!";
+            }
+
+            // Casual conversation
+            else if (["nice to meet you", "good to see you", "long time no see"].includes(input)) {
+                return "Nice to meet you too! I'm glad we can chat. What would you like to talk about?";
+            }
+
+            // Default response with suggestions
+            else {
+                const suggestions = [
+                    "I'm not sure how to respond to that. Try saying 'hello', 'help', or 'tell me a joke'!",
+                    "Hmm, I didn't quite understand. Try asking about my name, how I am, or tell me to joke!",
+                    "That's a new one! Maybe try 'help' to see what I can do?"
+                ];
+                return suggestions[Math.floor(Math.random() * suggestions.length)];
+            }
+        }
+
+        function addMessage(text, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            if (isUser) {
+                contentDiv.textContent = text;
+            } else {
+                contentDiv.innerHTML = `<strong>Bonnie:</strong> ${text}`;
+            }
+
+            messageDiv.appendChild(contentDiv);
+            chatBox.appendChild(messageDiv);
+
+            // Auto scroll to bottom
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+
+            if (message === '') return;
+
+            // Add user message
+            addMessage(message, true);
+
+            // Get bot response
+            const response = chatbotResponse(message);
+            addMessage(response, false);
+
+            // Clear input
+            userInput.value = '';
+            userInput.focus();
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Focus on input when page loads
+        userInput.focus();
+    </script>
+</body>
+</html>
